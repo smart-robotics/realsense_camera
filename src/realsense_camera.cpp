@@ -100,6 +100,7 @@ int depth_uv_enable_min = 0;
 int depth_uv_enable_max = 2047;
 
 std::string topic_depth_points_id = "/depth/points";
+std::string topic_flatcolor_depth_points_id = "/depth_flatcolor/points";
 std::string topic_depth_registered_points_id = "/depth_registered/points";
 
 std::string topic_image_rgb_raw_id = "/image/rgb_raw";
@@ -113,6 +114,7 @@ unsigned int head_sequence_id = 0;
 ros::Time head_time_stamp;
 
 ros::Publisher realsense_points_pub;
+ros::Publisher realsense_flatcolor_pub;
 ros::Publisher realsense_reg_points_pub;
 
 ros::Publisher realsense_rgb_image_pub;
@@ -229,16 +231,36 @@ void
 pubRealSensePointsXYZCloudMsg(pcl::PointCloud<pcl::PointXYZ>::Ptr &xyz_input)
 {
     pcl::PCLPointCloud2 pcl_xyz_pc2;
-    pcl::toPCLPointCloud2 (*xyz_input, pcl_xyz_pc2);
+    pcl::PointCloud<pcl::PointXYZRGB> pcl_xyzrgb_pc;
 
-    sensor_msgs::PointCloud2 realsense_xyz_cloud2;
+    //Copy cloud to 'old' xyzrgb cloud
+    //TODO: Adds RGB fields directly for PCLPointCloud2
+    pcl::PointCloud<pcl::PointXYZ> temp;
+    pcl::toPCLPointCloud2 (*xyz_input, pcl_xyz_pc2);
+    pcl::fromPCLPointCloud2(pcl_xyz_pc2, temp);
+    pcl::copyPointCloud(temp, pcl_xyzrgb_pc);
+
+    //Color cloud white
+    for (size_t i = 0; i < pcl_xyzrgb_pc.points.size(); i++) {
+        pcl_xyzrgb_pc.points[i].r = 255;
+        pcl_xyzrgb_pc.points[i].g = 255;
+        pcl_xyzrgb_pc.points[i].b = 255;
+    }
+
+    sensor_msgs::PointCloud2 realsense_xyz_cloud2, realsense_xyz_rgb_cloud2;
     pcl_conversions::moveFromPCL(pcl_xyz_pc2, realsense_xyz_cloud2);
+    pcl::toROSMsg(pcl_xyzrgb_pc, realsense_xyz_rgb_cloud2);
 
     realsense_xyz_cloud2.header.seq = head_sequence_id;
     realsense_xyz_cloud2.header.stamp = head_time_stamp;
     realsense_xyz_cloud2.header.frame_id = depth_frame_id;
 
+    realsense_xyz_rgb_cloud2.header.seq = head_sequence_id;
+    realsense_xyz_rgb_cloud2.header.stamp = head_time_stamp;
+    realsense_xyz_rgb_cloud2.header.frame_id = depth_frame_id;
+
     realsense_points_pub.publish (realsense_xyz_cloud2);
+    realsense_flatcolor_pub.publish (realsense_xyz_rgb_cloud2);
 }
 
 
@@ -676,6 +698,7 @@ int main(int argc, char* argv[])
     private_node_handle_.param("depth_uv_enable_max", depth_uv_enable_max, 2047);
 
     private_node_handle_.param("topic_depth_points_id", topic_depth_points_id, std::string("/depth/points"));
+    private_node_handle_.param("topic_flatcolor_depth_points_id", topic_flatcolor_depth_points_id, std::string("/depth_flatcolor/points"));
     private_node_handle_.param("topic_depth_registered_points_id", topic_depth_registered_points_id, std::string("/depth_registered/points"));
 
     private_node_handle_.param("topic_image_rgb_raw_id", topic_image_rgb_raw_id, std::string("/image/rgb_raw"));
@@ -821,6 +844,7 @@ int main(int argc, char* argv[])
 #endif
 
     realsense_points_pub = n.advertise<sensor_msgs::PointCloud2> (topic_depth_points_id, 1);
+    realsense_flatcolor_pub = n.advertise<sensor_msgs::PointCloud2> (topic_flatcolor_depth_points_id, 1);
     realsense_reg_points_pub = n.advertise<sensor_msgs::PointCloud2>(topic_depth_registered_points_id, 1);
 
     realsense_rgb_image_pub = n.advertise<sensor_msgs::Image>(topic_image_rgb_raw_id, 1);

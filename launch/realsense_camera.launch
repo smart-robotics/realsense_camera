@@ -39,11 +39,11 @@
     <arg name="depth_uv_enable_max" default="800" />
     
     <arg name="topic_depth_points_id" default="$(arg camera)/depth/points" />
-    <arg name="topic_flatcolor_depth_points_id" default="$(arg camera)/depth_registered/points/calibrated" />
+    <arg name="topic_flatcolor_depth_points_id" default="$(arg camera)/depths/points/flat_color" />
 
     <arg name="topic_depth_registered_points_id" default="$(arg camera)/depth_registered/points" />
     
-    <arg name="topic_image_rgb_raw_id" default="$(arg camera)/image/rgb_raw" />
+    <arg name="topic_image_rgb_raw_id" default="$(arg camera)/rgb/image_rect_color" />
     <arg name="topic_image_depth_raw_id" default="$(arg camera)/image/depth_raw" />
 
     <arg name="topic_image_infrared_raw_id" default="$(arg camera)/image/ir_raw" />

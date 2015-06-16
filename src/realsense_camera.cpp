@@ -56,13 +56,13 @@ double timeuse, all_timeuse;
 //y: end timeval
 //z: show string
 #define USE_TIMES_END_SHOW( x, y, z ) \
-        if(show_use_times) \
-        { \
-            gettimeofday( &y, NULL ); \
-            timeuse = 1000000 * ( y.tv_sec - x.tv_sec ) + y.tv_usec - x.tv_usec; \
-            timeuse /= 1000000; \
-            printf(z": [%f s]\n", timeuse); \
-        }
+    if(show_use_times) \
+{ \
+    gettimeofday( &y, NULL ); \
+    timeuse = 1000000 * ( y.tv_sec - x.tv_sec ) + y.tv_usec - x.tv_usec; \
+    timeuse /= 1000000; \
+    printf(z": [%f s]\n", timeuse); \
+    }
 
 
 
@@ -86,6 +86,7 @@ const int sensor_depth_max = 1200;
 
 std::string rgb_frame_id = "_rgb_optical_frame";
 std::string depth_frame_id = "_depth_optical_frame";
+std::string flatcolor_frame_id = "camera_rgb_optical_frame";
 
 float depth_unit = 31.25f;
 float depth_scale = 0.001f;
@@ -151,18 +152,18 @@ float	center_offset_pixel = 5.f;
 void
 initDepthToRGBUVMap()
 {
-	isHaveD2RGBUVMap = false;
+    isHaveD2RGBUVMap = false;
 
     std::string packagePath = ros::package::getPath("realsense_camera");
     std::string uvmapPath = packagePath + "/data/uvmap/" + useDeviceSerialNum;
 
     struct stat st;
-	if (stat(uvmapPath.c_str(), &st) != 0)
-	{
-		/* Directory does not exist. EEXIST for race condition */
-		printf("Directory %s does not exist!!!!\n", uvmapPath.c_str());
-		return;
-	}
+    if (stat(uvmapPath.c_str(), &st) != 0)
+    {
+        /* Directory does not exist. EEXIST for race condition */
+        printf("Directory %s does not exist!!!!\n", uvmapPath.c_str());
+        return;
+    }
 
     printf("\n============ start read UVMap\n");
 
@@ -197,7 +198,7 @@ initDepthToRGBUVMap()
 
     if(depthToRGBUVMapALL.size() == (depth_uv_enable_max - depth_uv_enable_min + 1))
     {
-    	isHaveD2RGBUVMap = true;
+        isHaveD2RGBUVMap = true;
     }
 
     printf("\n============ end read UVMap\n");
@@ -235,17 +236,17 @@ pubRealSensePointsXYZCloudMsg(pcl::PointCloud<pcl::PointXYZ>::Ptr &xyz_input)
 
     //Copy cloud to 'old' xyzrgb cloud
     //TODO: Adds RGB fields directly for PCLPointCloud2
-    pcl::PointCloud<pcl::PointXYZ> temp;
+//    pcl::PointCloud<pcl::PointXYZ> temp;
     pcl::toPCLPointCloud2 (*xyz_input, pcl_xyz_pc2);
-    pcl::fromPCLPointCloud2(pcl_xyz_pc2, temp);
-    pcl::copyPointCloud(temp, pcl_xyzrgb_pc);
+//    pcl::fromPCLPointCloud2(pcl_xyz_pc2, temp);
+//    pcl::copyPointCloud(temp, pcl_xyzrgb_pc);
 
     //Color cloud white
-    for (size_t i = 0; i < pcl_xyzrgb_pc.points.size(); i++) {
-        pcl_xyzrgb_pc.points[i].r = 255;
-        pcl_xyzrgb_pc.points[i].g = 255;
-        pcl_xyzrgb_pc.points[i].b = 255;
-    }
+//    for (size_t i = 0; i < pcl_xyzrgb_pc.points.size(); i++) {
+//        pcl_xyzrgb_pc.points[i].r = 255;
+//        pcl_xyzrgb_pc.points[i].g = 255;
+//        pcl_xyzrgb_pc.points[i].b = 255;
+//    }
 
     sensor_msgs::PointCloud2 realsense_xyz_cloud2, realsense_xyz_rgb_cloud2;
     pcl_conversions::moveFromPCL(pcl_xyz_pc2, realsense_xyz_cloud2);
@@ -255,12 +256,12 @@ pubRealSensePointsXYZCloudMsg(pcl::PointCloud<pcl::PointXYZ>::Ptr &xyz_input)
     realsense_xyz_cloud2.header.stamp = head_time_stamp;
     realsense_xyz_cloud2.header.frame_id = depth_frame_id;
 
-    realsense_xyz_rgb_cloud2.header.seq = head_sequence_id;
-    realsense_xyz_rgb_cloud2.header.stamp = head_time_stamp;
-    realsense_xyz_rgb_cloud2.header.frame_id = depth_frame_id;
+//    realsense_xyz_rgb_cloud2.header.seq = head_sequence_id;
+//    realsense_xyz_rgb_cloud2.header.stamp = head_time_stamp;
+//    realsense_xyz_rgb_cloud2.header.frame_id = depth_frame_id;
 
     realsense_points_pub.publish (realsense_xyz_cloud2);
-    realsense_flatcolor_pub.publish (realsense_xyz_rgb_cloud2);
+    //realsense_flatcolor_pub.publish (realsense_xyz_rgb_cloud2);
 }
 
 
@@ -281,90 +282,106 @@ pubRealSensePointsXYZRGBCloudMsg(pcl::PointCloud<PointType>::Ptr &xyzrgb_input)
 }
 
 void
-pubRealSenseDepthImageMsg(cv::Mat& depth_mat)
+pubRealSensePointsXYZFlatColorCloudMsg(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &xyzrgb_input)
 {
-	sensor_msgs::Image depth_img;
+//    pcl::PCLPointCloud2 pcl_xyzrgb_pc2;
+//    pcl::toPCLPointCloud2 (*xyzrgb_input, pcl_xyzrgb_pc2);
 
-	depth_img.header.seq = head_sequence_id;
-	depth_img.header.stamp = head_time_stamp;
+    sensor_msgs::PointCloud2 realsense_xyzrgb_cloud2;
+//    pcl_conversions::moveFromPCL(pcl_xyzrgb_pc2, realsense_xyzrgb_cloud2);
+    pcl::toROSMsg(*xyzrgb_input, realsense_xyzrgb_cloud2);
 
-	depth_img.width = depth_mat.cols;
-	depth_img.height = depth_mat.rows;
+    realsense_xyzrgb_cloud2.header.seq = head_sequence_id;
+    realsense_xyzrgb_cloud2.header.stamp = head_time_stamp;
+    realsense_xyzrgb_cloud2.header.frame_id = flatcolor_frame_id;
 
-	depth_img.encoding = sensor_msgs::image_encodings::MONO8;
-	depth_img.is_bigendian = 0;
-
-	int step = sizeof(unsigned char) * depth_img.width;
-	int size = step * depth_img.height;
-	depth_img.step = step;
-	depth_img.data.resize(size);
-	memcpy(&depth_img.data[0], depth_mat.data, size);
-
-	realsense_depth_image_pub.publish(depth_img);
+    realsense_flatcolor_pub.publish (realsense_xyzrgb_cloud2);
 }
 
+void
+pubRealSenseDepthImageMsg(cv::Mat& depth_mat)
+{
+    sensor_msgs::Image depth_img;
+
+    depth_img.header.seq = head_sequence_id;
+    depth_img.header.stamp = head_time_stamp;
+
+    depth_img.width = depth_mat.cols;
+    depth_img.height = depth_mat.rows;
+
+    depth_img.encoding = sensor_msgs::image_encodings::MONO8;
+    depth_img.is_bigendian = 0;
+
+    int step = sizeof(unsigned char) * depth_img.width;
+    int size = step * depth_img.height;
+    depth_img.step = step;
+    depth_img.data.resize(size);
+    memcpy(&depth_img.data[0], depth_mat.data, size);
+
+    realsense_depth_image_pub.publish(depth_img);
+}
 
 #ifdef V4L2_PIX_FMT_INZI
 void
 pubRealSenseInfraredImageMsg(cv::Mat& ir_mat)
 {
-	sensor_msgs::Image ir_img;
+    sensor_msgs::Image ir_img;
 
-	ir_img.header.seq = head_sequence_id;
-	ir_img.header.stamp = head_time_stamp;
+    ir_img.header.seq = head_sequence_id;
+    ir_img.header.stamp = head_time_stamp;
 
-	ir_img.width = ir_mat.cols;
-	ir_img.height = ir_mat.rows;
+    ir_img.width = ir_mat.cols;
+    ir_img.height = ir_mat.rows;
 
-	ir_img.encoding = sensor_msgs::image_encodings::MONO8;
-	ir_img.is_bigendian = 0;
+    ir_img.encoding = sensor_msgs::image_encodings::MONO8;
+    ir_img.is_bigendian = 0;
 
-	int step = sizeof(unsigned char) * ir_img.width;
-	int size = step * ir_img.height;
-	ir_img.step = step;
-	ir_img.data.resize(size);
-	memcpy(&ir_img.data[0], ir_mat.data, size);
+    int step = sizeof(unsigned char) * ir_img.width;
+    int size = step * ir_img.height;
+    ir_img.step = step;
+    ir_img.data.resize(size);
+    memcpy(&ir_img.data[0], ir_mat.data, size);
 
-	realsense_infrared_image_pub.publish(ir_img);
+    realsense_infrared_image_pub.publish(ir_img);
 }
 #endif
 
 void
 pubRealSenseRGBImageMsg(cv::Mat& rgb_mat)
 {
-	sensor_msgs::Image rgb_img;
+    sensor_msgs::Image rgb_img;
 
-	rgb_img.header.seq = head_sequence_id;
-	rgb_img.header.stamp = head_time_stamp;
+    rgb_img.header.seq = head_sequence_id;
+    rgb_img.header.stamp = head_time_stamp;
 
-	rgb_img.width = rgb_mat.cols;
-	rgb_img.height = rgb_mat.rows;
+    rgb_img.width = rgb_mat.cols;
+    rgb_img.height = rgb_mat.rows;
 
-	rgb_img.encoding = sensor_msgs::image_encodings::BGR8;
-	rgb_img.is_bigendian = 0;
+    rgb_img.encoding = sensor_msgs::image_encodings::BGR8;
+    rgb_img.is_bigendian = 0;
 
-	int step = sizeof(unsigned char) * 3 * rgb_img.width;
-	int size = step * rgb_img.height;
-	rgb_img.step = step;
-	rgb_img.data.resize(size);
-	memcpy(&rgb_img.data[0], rgb_mat.data, size);
+    int step = sizeof(unsigned char) * 3 * rgb_img.width;
+    int size = step * rgb_img.height;
+    rgb_img.step = step;
+    rgb_img.data.resize(size);
+    memcpy(&rgb_img.data[0], rgb_mat.data, size);
 
-	realsense_rgb_image_pub.publish(rgb_img);
+    realsense_rgb_image_pub.publish(rgb_img);
 
 
-	//save rgb img
-//	static int count = 0;
-//	count++;
-//	if(count > 0)
-//	{
-//	    struct timeval save_time;
-//        gettimeofday( &save_time, NULL );
-//        char save_name[256];
-//        sprintf(save_name, "~/temp/realsense_rgb_%d.jpg", (int)save_time.tv_sec);
-//        printf("\nsave realsense rgb img: %s\n", save_name);
-//	    cv::imwrite(save_name, rgb_mat);
-//	    count = 0;
-//	}
+    //save rgb img
+    //	static int count = 0;
+    //	count++;
+    //	if(count > 0)
+    //	{
+    //	    struct timeval save_time;
+    //        gettimeofday( &save_time, NULL );
+    //        char save_name[256];
+    //        sprintf(save_name, "~/temp/realsense_rgb_%d.jpg", (int)save_time.tv_sec);
+    //        printf("\nsave realsense rgb img: %s\n", save_name);
+    //	    cv::imwrite(save_name, rgb_mat);
+    //	    count = 0;
+    //	}
 }
 
 
@@ -426,52 +443,58 @@ processRGBD()
         return;
     }
 
-	cv::Mat depth_frame(depth_stream.height, depth_stream.width, CV_8UC1, depth_frame_buffer);
+    cv::Mat depth_frame(depth_stream.height, depth_stream.width, CV_8UC1, depth_frame_buffer);
 
 #ifdef V4L2_PIX_FMT_INZI
-	cv::Mat ir_frame(depth_stream.height, depth_stream.width, CV_8UC1, ir_frame_buffer);
+    cv::Mat ir_frame(depth_stream.height, depth_stream.width, CV_8UC1, ir_frame_buffer);
 #endif
 
-	cv::Mat rgb_frame_yuv(rgb_stream.height, rgb_stream.width, CV_8UC2, rgb_frame_buffer);
-	cv::Mat rgb_frame;
+    cv::Mat rgb_frame_yuv(rgb_stream.height, rgb_stream.width, CV_8UC2, rgb_frame_buffer);
+    cv::Mat rgb_frame;
 
-	memcpy(rgb_frame_buffer, rgb_stream.fillbuf, rgb_stream.buflen);
-	cv::cvtColor(rgb_frame_yuv,rgb_frame,CV_YUV2BGR_YUYV);
+    memcpy(rgb_frame_buffer, rgb_stream.fillbuf, rgb_stream.buflen);
+    cv::cvtColor(rgb_frame_yuv,rgb_frame,CV_YUV2BGR_YUYV);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr realsense_xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
-	realsense_xyz_cloud->width = depth_stream.width;
-	realsense_xyz_cloud->height = depth_stream.height;
-	realsense_xyz_cloud->is_dense = false;
-	realsense_xyz_cloud->points.resize(depth_stream.width * depth_stream.height);
+    realsense_xyz_cloud->width = depth_stream.width;
+    realsense_xyz_cloud->height = depth_stream.height;
+    realsense_xyz_cloud->is_dense = false;
+    realsense_xyz_cloud->points.resize(depth_stream.width * depth_stream.height);
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr realsense_flatcolor_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+    realsense_flatcolor_cloud->width = depth_stream.width;
+    realsense_flatcolor_cloud->height = depth_stream.height;
+    realsense_flatcolor_cloud->is_dense = false;
+    realsense_flatcolor_cloud->points.resize(depth_stream.width * depth_stream.height);
 
     pcl::PointCloud<PointType>::Ptr realsense_xyzrgb_cloud;
     if(isHaveD2RGBUVMap)
     {
-    	realsense_xyzrgb_cloud.reset(new pcl::PointCloud<PointType>());
+        realsense_xyzrgb_cloud.reset(new pcl::PointCloud<PointType>());
 
-		realsense_xyzrgb_cloud->width = depth_stream.width;
-		realsense_xyzrgb_cloud->height = depth_stream.height;
-		realsense_xyzrgb_cloud->is_dense = false;
-		realsense_xyzrgb_cloud->points.resize(depth_stream.width * depth_stream.height);
+        realsense_xyzrgb_cloud->width = depth_stream.width;
+        realsense_xyzrgb_cloud->height = depth_stream.height;
+        realsense_xyzrgb_cloud->is_dense = false;
+        realsense_xyzrgb_cloud->points.resize(depth_stream.width * depth_stream.height);
     }
 
 
     //depth value
     for(int i=0; i<depth_stream.width * depth_stream.height; ++i)
     {
-    	float depth = 0;
+        float depth = 0;
 #ifdef V4L2_PIX_FMT_INZI
-			unsigned short* depth_ptr = (unsigned short*)((unsigned char*)(depth_stream.fillbuf) + i*3);
-			unsigned char* ir_ptr = (unsigned char*)(depth_stream.fillbuf) + i*3+2;
+        unsigned short* depth_ptr = (unsigned short*)((unsigned char*)(depth_stream.fillbuf) + i*3);
+        unsigned char* ir_ptr = (unsigned char*)(depth_stream.fillbuf) + i*3+2;
 
-			unsigned char ir_raw = *ir_ptr;
-			ir_frame_buffer[i] = ir_raw;
+        unsigned char ir_raw = *ir_ptr;
+        ir_frame_buffer[i] = ir_raw;
 
-			unsigned short depth_raw = *depth_ptr;
-			depth = (float)depth_raw / depth_unit;
+        unsigned short depth_raw = *depth_ptr;
+        depth = (float)depth_raw / depth_unit;
 #else
-    		unsigned short depth_raw = *((unsigned short*)(depth_stream.fillbuf) + i);
-			depth = (float)depth_raw / depth_unit;
+        unsigned short depth_raw = *((unsigned short*)(depth_stream.fillbuf) + i);
+        depth = (float)depth_raw / depth_unit;
 #endif
 
         depth_frame_buffer[i] = depth ? 255 * (sensor_depth_max - depth) / sensor_depth_max : 0;
@@ -481,78 +504,85 @@ processRGBD()
 
         if(depth>0.000001f)
         {
-        	float pixel_x = (i % depth_stream.width) - depth_cx;
-        	float pixel_y = (i / depth_stream.width) - depth_cy;
+            float pixel_x = (i % depth_stream.width) - depth_cx;
+            float pixel_y = (i / depth_stream.width) - depth_cy;
             float zz = depth * depth_scale;
             realsense_xyz_cloud->points[i].x = pixel_x * zz * depth_fxinv;
             realsense_xyz_cloud->points[i].y = pixel_y * zz * depth_fyinv;
             realsense_xyz_cloud->points[i].z = zz;
 
+            realsense_flatcolor_cloud->points[i].x = realsense_xyz_cloud->points[i].x;
+            realsense_flatcolor_cloud->points[i].y = realsense_xyz_cloud->points[i].y;
+            realsense_flatcolor_cloud->points[i].z = realsense_xyz_cloud->points[i].z;
+            realsense_flatcolor_cloud->points[i].r = 255;
+            realsense_flatcolor_cloud->points[i].g = 255;
+            realsense_flatcolor_cloud->points[i].b = 255;
+
             if(isHaveD2RGBUVMap)
             {
-				realsense_xyzrgb_cloud->points[i].x = realsense_xyz_cloud->points[i].x;
-				realsense_xyzrgb_cloud->points[i].y = realsense_xyz_cloud->points[i].y;
-				realsense_xyzrgb_cloud->points[i].z = realsense_xyz_cloud->points[i].z;
+                realsense_xyzrgb_cloud->points[i].x = realsense_xyz_cloud->points[i].x;
+                realsense_xyzrgb_cloud->points[i].y = realsense_xyz_cloud->points[i].y;
+                realsense_xyzrgb_cloud->points[i].z = realsense_xyz_cloud->points[i].z;
 
-				if(!getUVWithDXY(depth, i, uvx, uvy))
-				{
-					int cx = (int)(uvx * rgb_stream.width + 0.5f);
-					int cy = (int)(uvy * rgb_stream.height + 0.5f);
-					if (cx >= 0 && cx < rgb_stream.width && cy >= 0 && cy < rgb_stream.height)
-					{
-						unsigned char *rgb = rgb_frame.data + (cx+cy*rgb_stream.width)*3;
-						unsigned char r = rgb[2];
-						unsigned char g = rgb[1];
-						unsigned char b = rgb[0];
+                if(!getUVWithDXY(depth, i, uvx, uvy))
+                {
+                    int cx = (int)(uvx * rgb_stream.width + 0.5f);
+                    int cy = (int)(uvy * rgb_stream.height + 0.5f);
+                    if (cx >= 0 && cx < rgb_stream.width && cy >= 0 && cy < rgb_stream.height)
+                    {
+                        unsigned char *rgb = rgb_frame.data + (cx+cy*rgb_stream.width)*3;
+                        unsigned char r = rgb[2];
+                        unsigned char g = rgb[1];
+                        unsigned char b = rgb[0];
 
 
-						if(debug_depth_unit &&
-							pixel_x > -center_offset_pixel &&
-							pixel_x < center_offset_pixel &&
-							pixel_y > -center_offset_pixel &&
-							pixel_y < center_offset_pixel )
-						{
-							center_z += zz;
-							center_z_count++;
-							realsense_xyzrgb_cloud->points[i].rgba = (0 << 24) | (0 << 16) | (0 << 8) | 255;
-						}
-						else
-						{
-							realsense_xyzrgb_cloud->points[i].rgba = (0 << 24) | (r << 16) | (g << 8) | b;
-						}
+                        if(debug_depth_unit &&
+                                pixel_x > -center_offset_pixel &&
+                                pixel_x < center_offset_pixel &&
+                                pixel_y > -center_offset_pixel &&
+                                pixel_y < center_offset_pixel )
+                        {
+                            center_z += zz;
+                            center_z_count++;
+                            realsense_xyzrgb_cloud->points[i].rgba = (0 << 24) | (0 << 16) | (0 << 8) | 255;
+                        }
+                        else
+                        {
+                            realsense_xyzrgb_cloud->points[i].rgba = (0 << 24) | (r << 16) | (g << 8) | b;
+                        }
 
-					}
-					else
-					{
-						realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
-						realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
-						realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
-						realsense_xyzrgb_cloud->points[i].rgba = 0;
-					}
-				}
-				else
-				{
-					realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
-					realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
-					realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
-					realsense_xyzrgb_cloud->points[i].rgba = 0;
-				}
+                    }
+                    else
+                    {
+                        realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
+                        realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
+                        realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
+                        realsense_xyzrgb_cloud->points[i].rgba = 0;
+                    }
+                }
+                else
+                {
+                    realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
+                    realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
+                    realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
+                    realsense_xyzrgb_cloud->points[i].rgba = 0;
+                }
             }
 
         }
         else
         {
-        	realsense_xyz_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
-			realsense_xyz_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
-			realsense_xyz_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
+            realsense_xyz_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
+            realsense_xyz_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
+            realsense_xyz_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
 
-        	if(isHaveD2RGBUVMap)
-        	{
-				realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
-				realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
-				realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
-				realsense_xyzrgb_cloud->points[i].rgba = 0;
-        	}
+            if(isHaveD2RGBUVMap)
+            {
+                realsense_xyzrgb_cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
+                realsense_xyzrgb_cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
+                realsense_xyzrgb_cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
+                realsense_xyzrgb_cloud->points[i].rgba = 0;
+            }
         }
 
     }
@@ -560,9 +590,9 @@ processRGBD()
 
     if(debug_depth_unit && center_z_count)
     {
-    	center_z /= center_z_count;
-    	printf("average center z value = %f    depth_unit = %f\n", center_z, depth_unit);
-    	center_z_count = 0;
+        center_z /= center_z_count;
+        printf("average center z value = %f    depth_unit = %f\n", center_z, depth_unit);
+        center_z_count = 0;
     }
 
 
@@ -590,9 +620,11 @@ processRGBD()
     pubRealSenseDepthImageMsg(depth_frame);
 
     pubRealSensePointsXYZCloudMsg(realsense_xyz_cloud);
+    pubRealSensePointsXYZFlatColorCloudMsg(realsense_flatcolor_cloud);
+
     if(isHaveD2RGBUVMap)
     {
-    	pubRealSensePointsXYZRGBCloudMsg(realsense_xyzrgb_cloud);
+        pubRealSensePointsXYZRGBCloudMsg(realsense_xyzrgb_cloud);
     }
 
 }
@@ -602,11 +634,11 @@ processRGBD()
 void
 realsenseConfigCallback(const realsense_camera::realsenseConfig::ConstPtr &config)
 {
-	if(debug_depth_unit)
-	{
-		depth_unit = config->depth_raw_unit;
-		printf("depth_unit = %f\n", depth_unit);
-	}
+    if(debug_depth_unit)
+    {
+        depth_unit = config->depth_raw_unit;
+        printf("depth_unit = %f\n", depth_unit);
+    }
 }
 
 void
@@ -635,7 +667,7 @@ dynamicReconfigCallback(realsense_camera::RealsenseCameraConfig &config, uint32_
 }
 
 bool getRGBUV(realsense_camera::get_rgb_uv::Request  &req,
-                realsense_camera::get_rgb_uv::Response &res)
+              realsense_camera::get_rgb_uv::Response &res)
 {
     float uvx, uvy;
 
@@ -711,42 +743,42 @@ int main(int argc, char* argv[])
 
 
     printf("\n\n===================\n"
-    		"rgb_frame_id = %s\n"
-    		"depth_frame_id = %s\n"
-    		"depth_unit = %f\n"
-    		"depth_scale = %f\n"
-    		"depth_fxinv = %f\n"
-    		"depth_fyinv = %f\n"
-    		"depth_cx = %f\n"
-    		"depth_cy = %f\n"
-    		"depth_uv_enable_min = %d\n"
-    		"depth_uv_enable_max = %d\n"
-    		"topic_depth_points_id = %s\n"
-    		"topic_depth_registered_points_id = %s\n"
-    		"topic_image_rgb_raw_id = %s\n"
-    		"topic_image_depth_raw_id = %s\n"
-    		"topic_image_infrared_raw_id = %s\n"
-            "debug_depth_unit = %d\n"
-    		"=======================\n\n",
+           "rgb_frame_id = %s\n"
+           "depth_frame_id = %s\n"
+           "depth_unit = %f\n"
+           "depth_scale = %f\n"
+           "depth_fxinv = %f\n"
+           "depth_fyinv = %f\n"
+           "depth_cx = %f\n"
+           "depth_cy = %f\n"
+           "depth_uv_enable_min = %d\n"
+           "depth_uv_enable_max = %d\n"
+           "topic_depth_points_id = %s\n"
+           "topic_depth_registered_points_id = %s\n"
+           "topic_image_rgb_raw_id = %s\n"
+           "topic_image_depth_raw_id = %s\n"
+           "topic_image_infrared_raw_id = %s\n"
+           "debug_depth_unit = %d\n"
+           "=======================\n\n",
 
-			rgb_frame_id.c_str(),
-			depth_frame_id.c_str(),
-			depth_unit,
-			depth_scale,
-			depth_fxinv,
-			depth_fyinv,
-			depth_cx,
-			depth_cy,
-			depth_uv_enable_min,
-			depth_uv_enable_max,
-			topic_depth_points_id.c_str(),
-			topic_depth_registered_points_id.c_str(),
-            topic_image_rgb_raw_id.c_str(),
-			topic_image_depth_raw_id.c_str(),
-			topic_image_infrared_raw_id.c_str(),
-            debug_depth_unit
+           rgb_frame_id.c_str(),
+           depth_frame_id.c_str(),
+           depth_unit,
+           depth_scale,
+           depth_fxinv,
+           depth_fyinv,
+           depth_cx,
+           depth_cy,
+           depth_uv_enable_min,
+           depth_uv_enable_max,
+           topic_depth_points_id.c_str(),
+           topic_depth_registered_points_id.c_str(),
+           topic_image_rgb_raw_id.c_str(),
+           topic_image_depth_raw_id.c_str(),
+           topic_image_infrared_raw_id.c_str(),
+           debug_depth_unit
 
-    		);
+           );
 
 
 #ifdef V4L2_PIX_FMT_INZI
@@ -754,8 +786,8 @@ int main(int argc, char* argv[])
 #else
     printf("\ndepthWithIRStream - NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
     printf("if you want IR stream, please visit\n"
-    		"http://solsticlipse.com/2015/03/31/intel-real-sense-3d-on-linux-macos.html\n"
-    		"https://github.com/teknotus/depthview/tree/kernelpatchfmt\n");
+           "http://solsticlipse.com/2015/03/31/intel-real-sense-3d-on-linux-macos.html\n"
+           "https://github.com/teknotus/depthview/tree/kernelpatchfmt\n");
 #endif
 
     //find realsense video device
@@ -772,33 +804,33 @@ int main(int argc, char* argv[])
 
     if(1)
     {
-    	printf("\n===========================================\n");
-    	printf("Intel(R) RealSense(TM) 3D Camer lists\n");
+        printf("\n===========================================\n");
+        printf("Intel(R) RealSense(TM) 3D Camer lists\n");
 
-    	for(int i=0; i<video_lists.size(); ++i)
-    	{
-    		printf("\nPCI: %s\n", video_lists[i].card_name.c_str());
-    		printf("Serial: %s\n", video_lists[i].serial_number.c_str());
-    		for(int j=0; j<video_lists[i].video_names.size(); ++j)
-    		{
-    			printf("\t%s\n", video_lists[i].video_names[j].c_str());
-    		}
-    	}
-    	printf("===========================================\n\n");
+        for(int i=0; i<video_lists.size(); ++i)
+        {
+            printf("\nPCI: %s\n", video_lists[i].card_name.c_str());
+            printf("Serial: %s\n", video_lists[i].serial_number.c_str());
+            for(int j=0; j<video_lists[i].video_names.size(); ++j)
+            {
+                printf("\t%s\n", video_lists[i].video_names[j].c_str());
+            }
+        }
+        printf("===========================================\n\n");
     }
 
     //return 0;
 
     if(video_lists[0].video_names.size() < 2)
-	{
-		printf("Intel(R) RealSense(TM) 3D Camer video device count error!!!!!!!!!!!\n");
-		ros::shutdown();
-		return 0;
-	}
+    {
+        printf("Intel(R) RealSense(TM) 3D Camer video device count error!!!!!!!!!!!\n");
+        ros::shutdown();
+        return 0;
+    }
     else
     {
-    	useDeviceSerialNum = video_lists[0].serial_number;
-    	printf("use camera %s\n", useDeviceSerialNum.c_str());
+        useDeviceSerialNum = video_lists[0].serial_number;
+        printf("use camera %s\n", useDeviceSerialNum.c_str());
     }
 
     initDepthToRGBUVMap();

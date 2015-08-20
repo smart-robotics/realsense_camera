@@ -25,7 +25,6 @@
     <arg name="rgb_frame_id" default="$(arg camera)_depth_optical_frame" />
     <arg name="depth_frame_id" default="$(arg camera)_rgb_optical_frame" />
 
-
     <arg name="depth_unit" default="33.1" />
     <arg name="depth_scale" default="0.001" />
     
@@ -39,7 +38,7 @@
     <arg name="depth_uv_enable_max" default="800" />
     
     <arg name="topic_depth_points_id" default="$(arg camera)/depth/points" />
-    <arg name="topic_flatcolor_depth_points_id" default="$(arg camera)/depths/points/flat_color" />
+    <arg name="topic_flatcolor_depth_points_id" default="$(arg camera)/depths/points_robot_frame" />
 
     <arg name="topic_depth_registered_points_id" default="$(arg camera)/depth_registered/points_3d_rectified" />
     

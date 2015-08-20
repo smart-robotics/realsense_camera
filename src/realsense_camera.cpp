@@ -279,6 +279,8 @@ pubRealSensePointsXYZRGBCloudMsg(pcl::PointCloud<PointType>::Ptr &xyzrgb_input)
     realsense_xyzrgb_cloud2.header.frame_id = depth_frame_id;
 
     realsense_reg_points_pub.publish (realsense_xyzrgb_cloud2);
+    realsense_xyzrgb_cloud2.header.frame_id = "philips/camera_rgb_optical_frame";
+    realsense_flatcolor_pub.publish( realsense_xyzrgb_cloud2);
 }
 
 void
@@ -620,7 +622,7 @@ processRGBD()
     pubRealSenseDepthImageMsg(depth_frame);
 
     pubRealSensePointsXYZCloudMsg(realsense_xyz_cloud);
-    pubRealSensePointsXYZFlatColorCloudMsg(realsense_flatcolor_cloud);
+    //pubRealSensePointsXYZFlatColorCloudMsg(realsense_flatcolor_cloud);
 
     if(isHaveD2RGBUVMap)
     {

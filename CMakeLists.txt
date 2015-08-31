@@ -6,12 +6,12 @@ project(realsense_camera)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
+  image_transport
   roscpp
   roslib
   std_msgs
   tf
 )
-
 
 # OpenCV
 find_package(OpenCV REQUIRED)
@@ -191,6 +191,7 @@ target_link_libraries(realsense_camera_node
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
   -ludev
+  -lv4l2
 )
 
 
